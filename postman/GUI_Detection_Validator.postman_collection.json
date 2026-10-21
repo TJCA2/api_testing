@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "GUI Detection Validator",
+    "description": "Postman tests for the GUI Detection Validator API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Health returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Status is ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Supported UI classes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/classes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "classes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Class list returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Supports button', () => pm.expect(pm.response.json().classes).to.include('button'));",
+              "pm.test('Count matches classes', () => pm.expect(pm.response.json().count).to.eql(pm.response.json().classes.length));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Valid detection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"button\",\n      \"confidence\": 0.92,\n      \"bbox\": [\n        10,\n        20,\n        110,\n        60\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Valid request returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Valid flag true', () => pm.expect(pm.response.json().valid).to.be.true);",
+              "pm.test('One detection checked', () => pm.expect(pm.response.json().detections_checked).to.eql(1));",
+              "pm.test('No issues', () => pm.expect(pm.response.json().issues).to.be.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unknown UI class",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"made_up_widget\",\n      \"confidence\": 0.9,\n      \"bbox\": [\n        10,\n        10,\n        100,\n        50\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Semantic validation returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('Unknown class flagged', () => pm.expect(pm.response.json().issues.map(x => x.code)).to.include('UNKNOWN_CLASS'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Out-of-bounds detection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"button\",\n      \"confidence\": 0.9,\n      \"bbox\": [\n        10,\n        10,\n        1400,\n        50\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid detection flagged', () => pm.expect(pm.response.json().valid).to.be.false);",
+              "pm.test('Out-of-bounds issue reported', () => pm.expect(pm.response.json().issues.map(x => x.code)).to.include('OUT_OF_BOUNDS'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reversed bounding box",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"text_input\",\n      \"confidence\": 0.9,\n      \"bbox\": [\n        200,\n        100,\n        20,\n        50\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Box order flagged', () => pm.expect(pm.response.json().issues.map(x => x.code)).to.include('INVALID_BOX_ORDER'));",
+              "pm.test('Invalid flag false', () => pm.expect(pm.response.json().valid).to.be.false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Low confidence",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"button\",\n      \"confidence\": 0.15,\n      \"bbox\": [\n        10,\n        10,\n        100,\n        50\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Low confidence reported', () => pm.expect(pm.response.json().issues.map(x => x.code)).to.include('LOW_CONFIDENCE'));",
+              "pm.test('One detection checked', () => pm.expect(pm.response.json().detections_checked).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Malformed confidence (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": [\n    {\n      \"label\": \"button\",\n      \"confidence\": 2.0,\n      \"bbox\": [\n        10,\n        10,\n        100,\n        50\n      ]\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Invalid JSON contract returns 422', () => pm.response.to.have.status(422));",
+              "pm.test('Structured details returned', () => pm.expect(pm.response.json().detail).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Empty detection list",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/validate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "validate"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"screenshot_width\": 1280,\n  \"screenshot_height\": 720,\n  \"min_confidence\": 0.3,\n  \"detections\": []\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Empty list accepted', () => pm.response.to.have.status(200));",
+              "pm.test('Zero detections counted', () => pm.expect(pm.response.json().detections_checked).to.eql(0));",
+              "pm.test('No validation issues', () => pm.expect(pm.response.json().issues).to.be.empty);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
